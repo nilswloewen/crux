@@ -1,6 +1,6 @@
 # Weather App Example (Crux)
 
-This project is a cross-platform weather application example built using [Crux](https://github.com/redbadger/crux/), demonstrating a clean separation of business logic (in Rust) and platform-specific UI (here, iOS/SwiftUI). The app fetches weather data from the [OpenWeatherMap API](https://openweathermap.org/api) and displays it in a modern, user-friendly interface.
+This project is a cross-platform weather application example built using [Crux](https://github.com/redbadger/crux/), demonstrating a clean separation of business logic (in Rust) supporting multiple UIs. The app fetches weather data from the [OpenWeatherMap API](https://openweathermap.org/api) and displays it in a modern, user-friendly interface.
 
 ## Features
 - Fetches current weather for a given location using OpenWeatherMap
@@ -18,6 +18,7 @@ This project is a cross-platform weather application example built using [Crux](
    - `config.rs` — Shared configuration (API keys, endpoints)
    - `app.rs` — Core app logic and view state management
 - `iOS/` — iOS app using SwiftUI, integrates with Rust via FFI
+- `web-dioxus` - [Dioxus](https://dioxuslabs.com/) - Multi-platform UI built in Rust 
 
 ## Architecture Summary
 - **Domain-Oriented**: Code organized by business domains (weather, location, favorites)
@@ -25,6 +26,7 @@ This project is a cross-platform weather application example built using [Crux](
 - **Crux Core**: All app logic, state, and effects are in Rust (`shared/`)
 - **FFI Bridge**: `shared_types/` generates Swift (and other) bindings using UniFFI and Crux typegen
 - **iOS App**: SwiftUI app (`iOS/Weather/`) calls into Rust for all business logic
+- **Web Dioxus**: Dioxus app calls into Crux app for all business logic
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for a detailed breakdown.
 

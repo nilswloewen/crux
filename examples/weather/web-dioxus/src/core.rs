@@ -1,15 +1,13 @@
-use std::rc::Rc;
-
+use crate::http;
 use dioxus::{
     prelude::{Signal, UnboundedReceiver},
     signals::WritableExt as _,
 };
 use futures_util::{StreamExt, TryStreamExt};
 use shared::{App, Effect, Event, ViewModel};
+use std::rc::Rc;
 use tracing::debug;
 use wasm_bindgen_futures::spawn_local;
-
-use crate::{http, sse};
 
 type Core = Rc<shared::Core<App>>;
 
@@ -20,7 +18,6 @@ pub struct CoreService {
 
 impl CoreService {
     pub fn new(view: Signal<ViewModel>) -> Self {
-        debug!("initializing core service");
         Self {
             core: Rc::new(shared::Core::new()),
             view,
@@ -45,8 +42,6 @@ impl CoreService {
 }
 
 fn process_effect(core: &Core, effect: Effect, view: &mut Signal<ViewModel>) {
-    debug!("effect: {:?}", effect);
-
     match effect {
         Effect::Render(_) => {
             // This currently issues a warning:
@@ -79,24 +74,11 @@ fn process_effect(core: &Core, effect: Effect, view: &mut Signal<ViewModel>) {
             });
         }
 
-        Effect::ServerSentEvents(mut request) => {
-            spawn_local({
-                let mut view = view.to_owned();
-                let core = core.clone();
-
-                async move {
-                    let mut stream = sse::request(&request.operation).await.unwrap();
-
-                    while let Ok(Some(response)) = stream.try_next().await {
-                        for effect in core
-                            .resolve(&mut request, response)
-                            .expect("should resolve")
-                        {
-                            process_effect(&core, effect, &mut view);
-                        }
-                    }
-                }
-            });
+        Effect::KeyValue(_) => {
+            todo!()
+        }
+        Effect::Location(_) => {
+            todo!()
         }
     }
 }

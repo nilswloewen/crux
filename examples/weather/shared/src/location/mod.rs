@@ -3,7 +3,7 @@ pub mod client;
 pub mod model;
 
 use facet::Facet;
-use model::GeocodingResponse;
+pub use model::GeocodingResponse;
 use serde::{Deserialize, Serialize};
 
 #[derive(Facet, Serialize, Deserialize, Clone, Copy, Debug, PartialEq)]
