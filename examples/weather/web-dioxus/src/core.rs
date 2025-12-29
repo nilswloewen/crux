@@ -39,8 +39,9 @@ impl CoreService {
         }
     }
 
-    #[tracing::instrument(skip(self, event))]
     fn update(&self, event: Event, view: &mut Signal<ViewModel>) {
+        debug!("event: {event:?}");
+
         for effect in self.core.process_event(event) {
             process_effect(&self.core, effect, view);
         }
@@ -52,15 +53,6 @@ fn process_effect(core: &Core, effect: Effect, view: &mut Signal<ViewModel>) {
 
     match effect {
         Effect::Render(_) => {
-            // This currently issues a warning:
-            //
-            // "Write on signal happened while a component was running.
-            // Writing to signals during a render can cause infinite rerenders when you read
-            // the same signal in the component. Consider writing to the signal in an
-            // effect, future, or event handler if possible."
-            //
-            // I think this is a bug in Dioxus, as we are in a coroutine, which is a future.
-            // Anyway, it works.
             view.set(core.view());
         }
 
@@ -82,9 +74,10 @@ fn process_effect(core: &Core, effect: Effect, view: &mut Signal<ViewModel>) {
             });
         }
 
-        Effect::KeyValue(mut request) => match request.operation {
+        Effect::KeyValue(mut request) => match &request.operation.clone() {
             KeyValueOperation::Get { ref key } => {
-                let local_value = use_synced_storage::<LocalStorage, Vec<u8>>(key.clone(), || Vec::new());
+                let local_value =
+                    use_synced_storage::<LocalStorage, Vec<u8>>(key.clone(), || Vec::new());
 
                 let res = KeyValueResult::Ok {
                     response: KeyValueResponse::Get {
@@ -111,7 +104,9 @@ fn process_effect(core: &Core, effect: Effect, view: &mut Signal<ViewModel>) {
                     process_effect(&core, effect, view);
                 }
             }
-            KeyValueOperation::Delete { key: _ } => unimplemented!("delete"),
+            KeyValueOperation::Delete { ref key } =>{
+                unimplemented!("delete")
+            },
             KeyValueOperation::Exists { key: _ } => unimplemented!("exists"),
             KeyValueOperation::ListKeys {
                 prefix: _,
