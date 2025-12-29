@@ -14,10 +14,12 @@ mod location;
 mod navigation;
 mod weather;
 
-pub use app::{App, Effect, Event, FavoriteView, Model, ViewModel, WorkflowViewModel, };
-pub use weather::model::current_response::{CurrentResponse};
+pub use app::{App, Effect, Event, FavoriteView, Model, ViewModel, WorkflowViewModel};
+pub use favorites::model::{FAVORITES_KEY, Favorite, Favorites};
+pub use location::capability::{LocationOperation, LocationResult};
+pub use location::{GeocodingResponse, Location};
 pub use weather::events::WeatherEvent;
-pub use location::{Location, GeocodingResponse};
+pub use weather::model::current_response::CurrentResponse;
 
 #[cfg(any(feature = "wasm_bindgen", feature = "uniffi"))]
 pub use ffi::CoreFFI;

@@ -29,6 +29,7 @@ pub enum Event {
     Favorites(Box<FavoritesEvent>),
 }
 
+#[derive(Debug)]
 #[effect(facet_typegen)]
 pub enum Effect {
     Render(RenderOperation),

@@ -34,7 +34,7 @@ impl Favorite {
     }
 }
 
-#[derive(Default, Debug, Clone, PartialEq)]
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Favorites(Vec<Favorite>);
 
 impl Favorites {

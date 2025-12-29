@@ -1,12 +1,18 @@
 mod core;
 mod http;
 
-use dioxus::prelude::*;
-use tracing::Level;
-
 use core::CoreService;
+use dioxus::prelude::*;
 use serde_json;
 use shared::{CurrentResponse, Event, Location, ViewModel, WeatherEvent, WorkflowViewModel};
+use tracing::Level;
+
+fn main() {
+    dioxus_logger::init(Level::DEBUG).expect("failed to init logger");
+    console_error_panic_hook::set_once();
+
+    launch(App);
+}
 
 #[component]
 fn App() -> Element {
@@ -23,7 +29,7 @@ fn App() -> Element {
     });
 
     // send initial event
-    // use_resource(move || async move { core.send(Event::Home(Box::new(WeatherEvent::Show))) });
+    use_resource(move || async move { core.send(Event::Home(Box::new(WeatherEvent::Show))) });
 
     rsx! {
         document::Link { rel: "stylesheet", href: asset!("../public/css/bulma.min.css") }
@@ -33,7 +39,6 @@ fn App() -> Element {
                 p { class: "is-size-5", "Rust Core, Rust Shell (Dioxus)" }
             }
             section { class: "section has-text-left",
-
                 {
                     match view().workflow {
                         WorkflowViewModel::Home { weather_data, favorites } => {
@@ -44,8 +49,6 @@ fn App() -> Element {
                                 h1 { class: "title", "Home" }
                                 h2 { class: "subtitle", "Weather Data" }
                                 pre { "{weather_json}" }
-
-                
                                 h2 { class: "subtitle", "Favourites" }
                                 for favorite in favorites.iter() {
                                     {
@@ -97,12 +100,4 @@ fn App() -> Element {
             }
         }
     }
-}
-
-fn main() {
-    // Init debug
-    dioxus_logger::init(Level::DEBUG).expect("failed to init logger");
-    console_error_panic_hook::set_once();
-
-    launch(App);
 }
