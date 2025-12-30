@@ -81,9 +81,9 @@ pub enum WorkflowViewModel {
 
 #[derive(Facet, Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct FavoriteView {
-    name: String,
-    location: Location,
-    current: Box<Option<CurrentResponse>>,
+    pub name: String,
+    pub location: Location,
+    pub current: Box<Option<CurrentResponse>>,
 }
 
 impl From<&Favorite> for FavoriteView {

@@ -67,7 +67,6 @@ fn App() -> Element {
 
     // send initial event
     use_resource(move || async move { core.send(Event::Home(Box::new(WeatherEvent::Show))) });
-    debug!("{:?}", view().workflow);
 
     rsx! {
         document::Link { rel: "stylesheet", href: asset!("../public/css/bulma.min.css") }

@@ -4,6 +4,7 @@ use shared::{
     GeocodingResponse, Location, LocationOperation, LocationResult, ViewModel, WeatherEvent,
     Workflow, WorkflowViewModel,
 };
+
 #[component]
 pub fn AddFavorite(search_results: Option<Vec<GeocodingResponse>>) -> Element {
     let core = use_context::<Coroutine<Event>>();
@@ -24,8 +25,8 @@ pub fn AddFavorite(search_results: Option<Vec<GeocodingResponse>>) -> Element {
 
         h2 { class: "subtitle", "Search Results" }
         if let Some(results) = search_results {
-      SearchResults {results}
-        }else {
+            SearchResults { results }
+        } else {
             "No results"
         }
     }
@@ -36,25 +37,25 @@ pub fn SearchResults(results: Vec<GeocodingResponse>) -> Element {
     let core = use_context::<Coroutine<Event>>();
 
     rsx!{
-           ul {
-                for result in results.iter() {
-                    {
-                        let res_clone = result.clone();
-                        let onclick = move |_| {
-                            core.send(
-                                Event::Favorites(
-                                    Box::new(FavoritesEvent::Submit(Box::new(res_clone.clone()))),
-                                ),
-                            )
-                        };
-                        rsx! {
-                            li {
-                                "{result}"
-                                button { onclick, "+" }
-                            }
+        ul {
+            for result in results.iter() {
+                {
+                    let res_clone = result.clone();
+                    let onclick = move |_| {
+                        core.send(
+                            Event::Favorites(
+                                Box::new(FavoritesEvent::Submit(Box::new(res_clone.clone()))),
+                            ),
+                        )
+                    };
+                    rsx! {
+                        li {
+                            "{result}"
+                            button { onclick, "+" }
                         }
                     }
                 }
             }
-   }
+        }
+    }
 }
