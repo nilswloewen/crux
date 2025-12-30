@@ -9,8 +9,8 @@ use dioxus_sdk_geolocation::{init_geolocator, use_geolocation, PowerMode};
 use dioxus_sdk_storage::{use_synced_storage, LocalStorage};
 use serde_json;
 use shared::{
-    Core, CurrentResponse, Event, FavoriteView, Location, LocationOperation, LocationResult,
-    ViewModel, WeatherEvent, WorkflowViewModel,
+    Core, CurrentResponse, Event, FavoriteView, FavoritesEvent, FavoritesState, Location,
+    LocationOperation, LocationResult, ViewModel, WeatherEvent, Workflow, WorkflowViewModel,
 };
 use tracing::Level;
 use views::{AddFavorite, Favorites, Home};
@@ -60,12 +60,14 @@ fn App() -> Element {
     let geo = init_geolocator(PowerMode::High);
 
     let core = use_coroutine(move |mut rx| {
-        let svc = CoreService::new(view, geo);
+        let svc = CoreService::new(view.clone(), geo);
         async move { svc.run(&mut rx).await }
     });
+    use_context_provider(|| core);
 
     // send initial event
     use_resource(move || async move { core.send(Event::Home(Box::new(WeatherEvent::Show))) });
+    debug!("{:?}", view().workflow);
 
     rsx! {
         document::Link { rel: "stylesheet", href: asset!("../public/css/bulma.min.css") }
@@ -75,6 +77,17 @@ fn App() -> Element {
                 p { class: "is-size-5", "Rust Core, Rust Shell (Dioxus)" }
             }
             section { class: "section has-text-left",
+                nav {
+                    a { onclick: move |_| core.send(Event::Navigate(Box::new(Workflow::Home))),
+                        "Home"
+                    }
+                    a {
+                        onclick: move |_| {
+                            core.send(Event::Navigate(Box::new(Workflow::Favorites(FavoritesState::Idle))))
+                        },
+                        "Favorites"
+                    }
+                }
                 {
                     match view().workflow {
                         WorkflowViewModel::Home { weather_data, favorites } => rsx! {

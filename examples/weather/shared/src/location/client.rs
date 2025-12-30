@@ -34,7 +34,7 @@ impl LocationApi {
             .query(&GeocodingQueryString {
                 q: query.to_string(),
                 limit: "5",
-                appid: API_KEY.clone(),
+                appid: API_KEY.to_string(),
             })
             .expect("could not serialize query string")
             .build()
@@ -58,7 +58,7 @@ impl LocationApi {
             .query(&GeocodingQueryString {
                 q: query.to_string(),
                 limit: "5",
-                appid: API_KEY.clone(),
+                appid: API_KEY.to_string(),
             })
             .expect("could not serialize query string")
             .build()

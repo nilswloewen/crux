@@ -14,8 +14,9 @@ mod location;
 mod navigation;
 mod weather;
 
-pub use app::{App, Effect, Event, FavoriteView, Model, ViewModel, WorkflowViewModel};
-pub use favorites::model::{FAVORITES_KEY, Favorite, Favorites};
+pub use app::{App, Effect, Event, FavoriteView, Model, ViewModel, WorkflowViewModel , Workflow,};
+pub use favorites::model::{FAVORITES_KEY, Favorite, Favorites, FavoritesState};
+pub use favorites::events::FavoritesEvent;
 pub use location::capability::{LocationOperation, LocationResult};
 pub use location::{GeocodingResponse, Location};
 pub use weather::events::WeatherEvent;

@@ -35,7 +35,7 @@ impl WeatherApi {
                 lat: location.lat.to_string(),
                 lon: location.lon.to_string(),
                 units: "metric",
-                appid: API_KEY.clone(),
+                appid: API_KEY.to_string(),
             })
             .expect("could not serialize query string")
             .build()
@@ -59,7 +59,7 @@ impl WeatherApi {
                 lat: location.lat.to_string(),
                 lon: location.lon.to_string(),
                 units: "metric",
-                appid: API_KEY.clone(),
+                appid: API_KEY.to_string(),
             })
             .expect("could not serialize query string")
             .build()
