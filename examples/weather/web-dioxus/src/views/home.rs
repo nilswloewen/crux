@@ -3,16 +3,6 @@ use shared::{CurrentResponse, Event, FavoriteView, Favorites, ViewModel, Workflo
 
 #[component]
 pub fn Home(weather_data: Box<CurrentResponse>, favorites: Vec<FavoriteView>) -> Element {    let dispatch = use_context::<Coroutine<Event>>();
-    let view_model = use_context::<Signal<ViewModel>>();
-
-    let WorkflowViewModel::Home {
-        weather_data,
-        favorites,
-    } = view_model().workflow
-    else {
-        panic!("Only WorkflowViewModel::Home allowed here");
-    };
-
     rsx! {
         h1 { class: "title", "Home" }
         h2 { class: "subtitle", "Current Location" }

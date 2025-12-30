@@ -1,5 +1,7 @@
 mod core;
 mod http;
+mod layout;
+mod routes;
 mod views;
 
 use core::CoreService;
@@ -7,6 +9,7 @@ use crux_kv::{value, KeyValueOperation, KeyValueResponse, KeyValueResult, Value}
 use dioxus::prelude::*;
 use dioxus_sdk_geolocation::{init_geolocator, use_geolocation, PowerMode};
 use dioxus_sdk_storage::{use_synced_storage, LocalStorage};
+use routes::Route;
 use serde_json;
 use shared::{
     Core, CurrentResponse, Event, FavoriteView, FavoritesEvent, FavoritesState, GeocodingResponse,
@@ -24,60 +27,6 @@ fn main() {
     launch(App);
 }
 
-#[derive(Clone, Debug, PartialEq, Routable)]
-enum Route {
-    #[layout(Layout)]
-    #[route("/")]
-    Home {
-        weather_data: Box<CurrentResponse>,
-        favorites: Vec<FavoriteView>,
-    },
-
-    #[route("/favorites")]
-    Favorites {
-        favorites: Vec<FavoriteView>,
-        delete_confirmation: Option<Location>,
-    },
-
-    #[route("/favorites/add")]
-    AddFavorite {
-        search_results: Option<Vec<GeocodingResponse>>,
-    },
-}
-
-#[component]
-fn Layout() -> Element {
-    rsx! {
-        document::Link { rel: "stylesheet", href: asset!("../public/css/bulma.min.css") }
-        Nav {}
-        Outlet::<Route> {}
-    }
-}
-#[component]
-fn Nav() -> Element {
-    let core = use_context::<Coroutine<Event>>();
-
-    rsx! {
-        nav {
-            ul {
-                li {
-                    a { onclick: move |_| core.send(Event::Navigate(Box::new(Workflow::Home))),
-                        "Home"
-                    }
-                }
-                li {
-                    a {
-                        onclick: move |_| {
-                            core.send(Event::Navigate(Box::new(Workflow::Favorites(FavoritesState::Idle))))
-                        },
-                        "Favorites"
-                    }
-                }
-            }
-        }
-    }
-}
-
 #[component]
 fn App() -> Element {
     let view_model = use_signal(|| ViewModel {
@@ -86,7 +35,6 @@ fn App() -> Element {
             favorites: Vec::new(),
         },
     });
-    use_context_provider(|| view_model.clone());
 
     let geo = init_geolocator(PowerMode::High);
 
@@ -102,21 +50,20 @@ fn App() -> Element {
     rsx! {
         Router::<Route> {}
 
-        //
-        // {
-        //     match view().workflow {
-        //         WorkflowViewModel::Home { weather_data, favorites } => rsx! {
-        //             Home { weather_data, favorites }
-        //         },
-        //         WorkflowViewModel::Favorites { favorites, delete_confirmation } => {
-        //             rsx! {
-        //                 Favorites { favorites, delete_confirmation }
-        //             }
-        //         }
-        //         WorkflowViewModel::AddFavorite { search_results } => rsx! {
-        //             AddFavorite { search_results }
-        //         },
-        //     }
-        // }
+        {
+            match view_model().workflow {
+                WorkflowViewModel::Home { weather_data, favorites } => rsx! {
+                    Home { weather_data, favorites }
+                },
+                WorkflowViewModel::Favorites { favorites, delete_confirmation } => {
+                    rsx! {
+                        Favorites { favorites, delete_confirmation }
+                    }
+                }
+                WorkflowViewModel::AddFavorite { search_results } => rsx! {
+                    AddFavorite { search_results }
+                },
+            }
+        }
     }
 }

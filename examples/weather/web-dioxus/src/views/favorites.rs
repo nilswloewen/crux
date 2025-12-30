@@ -3,18 +3,14 @@ use shared::{
     App, Core, CurrentResponse, Event, FavoriteView, FavoritesEvent, FavoritesState, Location,
     LocationOperation, LocationResult, ViewModel, WeatherEvent, Workflow, WorkflowViewModel,
 };
+use crate::Route;
 
 #[component]
 pub fn Favorites(favorites: Vec<FavoriteView>, delete_confirmation: Option<Location>) -> Element {
-    let core = use_context::<Coroutine<Event>>();
-    let view_model = use_context::<Signal<ViewModel>>();
-
     rsx! {
         h1 { class: "title", "Favorites" }
         h2 { class: "subtitle", "Favourites" }
-        a { onclick: move |_| { core.send(Event::Navigate(Box::new(Workflow::AddFavorite))) },
-            "Add Favorite"
-        }
+        Link { to: Route::AddFavoriteRoute, "Add Favorite" }
         table { class: "table",
             for favorite in favorites.iter() {
                 tr {
