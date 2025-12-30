@@ -9,7 +9,7 @@ edition = "2021"
 anyhow.workspace = true
 console_error_panic_hook = "0.1.7"
 crux_kv.workspace = true
-dioxus = { version = "0.7.2", features = ["web"] }
+dioxus = { version = "0.7.2", features = ["router", "web"] }
 dioxus-logger = "0.7.2"
 dioxus-sdk-geolocation = "0.7.0"
 dioxus-sdk-storage = "0.7.0"

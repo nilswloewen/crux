@@ -1,18 +1,19 @@
 mod core;
 mod http;
+mod views;
 
 use core::CoreService;
 use crux_kv::{value, KeyValueOperation, KeyValueResponse, KeyValueResult, Value};
 use dioxus::prelude::*;
 use dioxus_sdk_geolocation::{init_geolocator, use_geolocation, PowerMode};
 use dioxus_sdk_storage::{use_synced_storage, LocalStorage};
-use js_sys::Reflect::get_own_property_descriptor;
 use serde_json;
 use shared::{
-    Core, CurrentResponse, Event, Location, LocationOperation, LocationResult, ViewModel,
-    WeatherEvent, WorkflowViewModel,
+    Core, CurrentResponse, Event, FavoriteView, Location, LocationOperation, LocationResult,
+    ViewModel, WeatherEvent, WorkflowViewModel,
 };
 use tracing::Level;
+use views::{AddFavorite, Favorites, Home};
 use wasm_bindgen_futures::spawn_local;
 
 fn main() {
@@ -21,6 +22,31 @@ fn main() {
 
     launch(App);
 }
+
+// #[derive(Clone, Debug, PartialEq, Routable)]
+// enum Route {
+//     #[route("/")]
+//     Home {
+//         weather_data: Box<CurrentResponse>,
+//         favorites: Vec<FavoriteView>,
+//     },
+//
+//     #[route("/favorites")]
+//     Favorites,
+//
+//     #[route("/favorites/add")]
+//     AddFavorite,
+// }
+//
+// #[component]
+// fn NavBar() -> Element {
+//     rsx! {
+//         nav {
+//             Link { to: Route::Home {}, "Home" }
+//         }
+//         Outlet::<Route> {}
+//     }
+// }
 
 #[component]
 fn App() -> Element {
@@ -51,60 +77,17 @@ fn App() -> Element {
             section { class: "section has-text-left",
                 {
                     match view().workflow {
-                        WorkflowViewModel::Home { weather_data, favorites } => {
-                            let json_val = serde_json::to_value(weather_data)?;
-                            let weather_json = serde_json::to_string_pretty(&json_val)?;
-
-                            rsx! {
-                                h1 { class: "title", "Home" }
-                                h2 { class: "subtitle", "Weather Data" }
-                                pre { "{weather_json}" }
-                                h2 { class: "subtitle", "Favourites" }
-                                for favorite in favorites.iter() {
-                                    {
-                                        let json_val = serde_json::to_value(favorite)?;
-                                        let favorite_json = serde_json::to_string_pretty(&json_val)?;
-                                        rsx! {
-                                            pre { "{favorite_json}" }
-                                        }
-                                    }
-                                }
-
-                            }
-                        }
+                        WorkflowViewModel::Home { weather_data, favorites } => rsx! {
+                            Home { weather_data, favorites }
+                        },
                         WorkflowViewModel::Favorites { favorites, delete_confirmation } => {
                             rsx! {
-                                h1 { class: "title", "Favorites" }
-                                h2 { class: "subtitle", "Favourites" }
-                                for favorite in favorites.iter() {
-                                    {
-                                        let json_val = serde_json::to_value(favorite)?;
-                                        let favorite_json = serde_json::to_string_pretty(&json_val)?;
-                                        rsx! {
-                                            pre { "{favorite_json}" }
-                                        }
-                                    }
-                                }
-
-                                h2 { class: "subtitle", "Delete Confirmation" }
-                                if let Some(Location { lat, lon }) = delete_confirmation {
-                                    "Lat: {lat}, Long: {lon}"
-                                } else {
-                                    "None"
-                                }
+                                Favorites { favorites, delete_confirmation }
                             }
                         }
-                        WorkflowViewModel::AddFavorite { search_results } => {
-                            rsx! {
-                                h1 { class: "title", "Add Favorite" }
-                                h2 { class: "subtitle", "Search Results" }
-                                if let Some(results) = search_results {
-                                    for result in results.iter() {
-                                        "{result}"
-                                    }
-                                }
-                            }
-                        }
+                        WorkflowViewModel::AddFavorite { search_results } => rsx! {
+                            AddFavorite { search_results }
+                        },
                     }
                 }
             }
