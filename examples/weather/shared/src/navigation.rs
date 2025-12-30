@@ -27,6 +27,12 @@ impl Page<Home> {
     }
 }
 
+impl Page<AddFavorite> {
+    pub fn favorites(self) -> Page<Favorites> {
+        Page::default()
+    }
+}
+
 impl Page<Favorites> {
     pub fn add_favorite(self) -> Page<AddFavorite> {
         Page::default()
@@ -57,10 +63,10 @@ pub fn navigate(page: &mut CurrentPage, next: &Workflow) {
         Workflow::Favorites(_) => match current {
             CurrentPage::Home(p) => CurrentPage::Favorites(p.favorites()),
             CurrentPage::Favorites(p) => CurrentPage::Favorites(p),
-            CurrentPage::AddFavorite(_p) => unimplemented!(),
+            CurrentPage::AddFavorite(p) =>  CurrentPage::Favorites(p.favorites()),
         },
         Workflow::AddFavorite => match current {
-            CurrentPage::Home(_p) => unimplemented!(),
+            CurrentPage::Home(_p) => unimplemented!("Home to AddFavorite"),
             CurrentPage::Favorites(p) => CurrentPage::AddFavorite(p.add_favorite()),
             CurrentPage::AddFavorite(p) => CurrentPage::AddFavorite(p),
         },

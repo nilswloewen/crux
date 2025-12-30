@@ -5,7 +5,7 @@ use shared::{CurrentResponse, FavoriteView, Favorites, WorkflowViewModel};
 pub fn Home(weather_data: Box<CurrentResponse>, favorites: Vec<FavoriteView>) -> Element {
     rsx! {
         h1 { class: "title", "Home" }
-        h2 { class: "subtitle", "Weather Data" }
+        h2 { class: "subtitle", "Current Location" }
         table { class: "table",
             tr {
                 th { "{weather_data.name}" }

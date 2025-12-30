@@ -9,8 +9,9 @@ use dioxus_sdk_geolocation::{init_geolocator, use_geolocation, PowerMode};
 use dioxus_sdk_storage::{use_synced_storage, LocalStorage};
 use serde_json;
 use shared::{
-    Core, CurrentResponse, Event, FavoriteView, FavoritesEvent, FavoritesState, Location,
-    LocationOperation, LocationResult, ViewModel, WeatherEvent, Workflow, WorkflowViewModel,
+    Core, CurrentResponse, Event, FavoriteView, FavoritesEvent, FavoritesState, GeocodingResponse,
+    Location, LocationOperation, LocationResult, ViewModel, WeatherEvent, Workflow,
+    WorkflowViewModel,
 };
 use tracing::Level;
 use views::{AddFavorite, Favorites, Home};
@@ -23,31 +24,59 @@ fn main() {
     launch(App);
 }
 
-// #[derive(Clone, Debug, PartialEq, Routable)]
-// enum Route {
-//     #[route("/")]
-//     Home {
-//         weather_data: Box<CurrentResponse>,
-//         favorites: Vec<FavoriteView>,
-//     },
-//
-//     #[route("/favorites")]
-//     Favorites,
-//
-//     #[route("/favorites/add")]
-//     AddFavorite,
-// }
-//
-// #[component]
-// fn NavBar() -> Element {
-//     rsx! {
-//         nav {
-//             Link { to: Route::Home {}, "Home" }
-//         }
-//         Outlet::<Route> {}
-//     }
-// }
+#[derive(Clone, Debug, PartialEq, Routable)]
+enum Route {
+    #[layout(Layout)]
+    #[route("/")]
+    Home {
+        weather_data: Box<CurrentResponse>,
+        favorites: Vec<FavoriteView>,
+    },
 
+    #[route("/favorites")]
+    Favorites {
+        favorites: Vec<FavoriteView>,
+        delete_confirmation: Option<Location>,
+    },
+
+    #[route("/favorites/add")]
+    AddFavorite {
+        search_results: Option<Vec<GeocodingResponse>>,
+    },
+}
+
+#[component]
+fn Layout() -> Element {
+    rsx! {
+         document::Link { rel: "stylesheet", href: asset!("../public/css/bulma.min.css") }
+        Nav{}
+         Outlet::<Route> {}
+    }
+}
+#[component]
+fn Nav() -> Element {
+    let core = use_context::<Coroutine<Event>>();
+
+    rsx! {
+               nav {
+                    ul {
+                        li {
+                            a { onclick: move |_| core.send(Event::Navigate(Box::new(Workflow::Home))),
+                                "Home"
+                            }
+                        }
+                        li {
+                            a {
+                                onclick: move |_| {
+                                    core.send(Event::Navigate(Box::new(Workflow::Favorites(FavoritesState::Idle))))
+                                },
+                                "Favorites"
+                            }
+                        }
+                    }
+                }
+    }
+}
 #[component]
 fn App() -> Element {
     let view = use_signal(|| ViewModel {
@@ -69,30 +98,9 @@ fn App() -> Element {
     use_resource(move || async move { core.send(Event::Home(Box::new(WeatherEvent::Show))) });
 
     rsx! {
-        document::Link { rel: "stylesheet", href: asset!("../public/css/bulma.min.css") }
-        main {
-            section { class: "section has-text-centered",
-                h1 { class: "title", "Crux Weather Example" }
-                p { class: "is-size-5", "Rust Core, Rust Shell (Dioxus)" }
-            }
-            section { class: "section has-text-left",
-                nav {
-                    ul {
-                        li {
-                            a { onclick: move |_| core.send(Event::Navigate(Box::new(Workflow::Home))),
-                                "Home"
-                            }
-                        }
-                        li {
-                            a {
-                                onclick: move |_| {
-                                    core.send(Event::Navigate(Box::new(Workflow::Favorites(FavoritesState::Idle))))
-                                },
-                                "Favorites"
-                            }
-                        }
-                    }
-                }
+                        Router::<Route> {}
+
+
                 {
                     match view().workflow {
                         WorkflowViewModel::Home { weather_data, favorites } => rsx! {
@@ -106,9 +114,5 @@ fn App() -> Element {
                         WorkflowViewModel::AddFavorite { search_results } => rsx! {
                             AddFavorite { search_results }
                         },
-                    }
-                }
-            }
-        }
-    }
+    }}}
 }
