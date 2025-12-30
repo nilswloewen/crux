@@ -14,12 +14,17 @@ pub fn Favorites(favorites: Vec<FavoriteView>, delete_confirmation: Option<Locat
         a { onclick: move |_| { core.send(Event::Navigate(Box::new(Workflow::AddFavorite))) },
             "Add Favorite"
         }
-        for favorite in favorites.iter() {
-            {
-                let json_val = serde_json::to_value(favorite)?;
-                let favorite_json = serde_json::to_string_pretty(&json_val)?;
-                rsx! {
-                    pre { "{favorite_json}" }
+        table { class: "table",
+            for favorite in favorites.iter() {
+                tr {
+                    th { "{favorite.name}" }
+                    td { class: "has-text-right",
+                        if let Some(ref current) = *favorite.current {
+                            "{current.main.temp} °C"
+                        } else {
+                            "Loading..."
+                        }
+                    }
                 }
             }
         }
