@@ -63,7 +63,7 @@ pub fn navigate(page: &mut CurrentPage, next: &Workflow) {
         Workflow::Favorites(_) => match current {
             CurrentPage::Home(p) => CurrentPage::Favorites(p.favorites()),
             CurrentPage::Favorites(p) => CurrentPage::Favorites(p),
-            CurrentPage::AddFavorite(p) =>  CurrentPage::Favorites(p.favorites()),
+            CurrentPage::AddFavorite(p) => CurrentPage::Favorites(p.favorites()),
         },
         Workflow::AddFavorite => match current {
             CurrentPage::Home(_p) => unimplemented!("Home to AddFavorite"),

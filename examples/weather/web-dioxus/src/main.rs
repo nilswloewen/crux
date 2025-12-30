@@ -4,6 +4,7 @@ mod layout;
 mod routes;
 mod views;
 
+use crate::core::{LocalStorageKV, LOCAL_STORAGE_KV_KEY};
 use core::CoreService;
 use crux_kv::{value, KeyValueOperation, KeyValueResponse, KeyValueResult, Value};
 use dioxus::prelude::*;
@@ -32,8 +33,13 @@ fn App() -> Element {
     let view_model = use_signal(|| ViewModel::default());
     use_context_provider(|| view_model);
 
+    let local_storage = use_synced_storage::<LocalStorage, LocalStorageKV>(
+        LOCAL_STORAGE_KV_KEY.to_string(),
+        || LocalStorageKV::new(),
+    );
+
     let dispatch: Dispatch = use_coroutine(move |mut rx| {
-        let svc = CoreService::new(view_model.clone(), geo);
+        let svc = CoreService::new(view_model.clone(), geo, local_storage);
         async move { svc.run(&mut rx).await }
     });
     use_context_provider(|| dispatch);
