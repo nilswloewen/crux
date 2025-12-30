@@ -58,7 +58,7 @@ pub struct Model {
     pub last_location: Option<Location>,
 }
 
-#[derive(Facet, Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Facet, Serialize, Deserialize, Clone, Debug, PartialEq, Default)]
 pub struct ViewModel {
     pub workflow: WorkflowViewModel,
 }
@@ -77,6 +77,14 @@ pub enum WorkflowViewModel {
     AddFavorite {
         search_results: Option<Vec<GeocodingResponse>>,
     },
+}
+impl Default for WorkflowViewModel {
+    fn default() -> Self {
+        WorkflowViewModel::Home {
+            weather_data: Box::new(CurrentResponse::default()),
+            favorites: Vec::new(),
+        }
+    }
 }
 
 #[derive(Facet, Serialize, Deserialize, Clone, Debug, PartialEq)]

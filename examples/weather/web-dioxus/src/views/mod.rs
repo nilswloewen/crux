@@ -1,7 +1,7 @@
-mod home;
-mod favorites;
 mod add_favorite;
+mod favorites;
+mod home;
 
-pub use home::Home;
-pub use favorites::Favorites;
 pub use add_favorite::AddFavorite;
+pub use favorites::Favorites;
+pub use home::Home;

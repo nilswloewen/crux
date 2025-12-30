@@ -15,6 +15,7 @@ use shared::{CurrentResponse, Event, ViewModel, WeatherEvent, WorkflowViewModel}
 use tracing::Level;
 use wasm_bindgen_futures::spawn_local;
 
+/// Dispatch allows Dioxus to send event messages to Crux core.
 pub type Dispatch = Coroutine<Event>;
 
 fn main() {
@@ -28,12 +29,7 @@ fn main() {
 fn App() -> Element {
     let geo = init_geolocator(PowerMode::High);
 
-    let view_model = use_signal(|| ViewModel {
-        workflow: WorkflowViewModel::Home {
-            weather_data: Box::new(CurrentResponse::default()),
-            favorites: Vec::new(),
-        },
-    });
+    let view_model = use_signal(|| ViewModel::default());
     use_context_provider(|| view_model);
 
     let dispatch: Dispatch = use_coroutine(move |mut rx| {
@@ -43,7 +39,7 @@ fn App() -> Element {
     use_context_provider(|| dispatch);
 
     // send initial event
-    use_resource(move || async move { dispatch.send(Event::Home(Box::new(WeatherEvent::Show))) });
+    use_effect(move || dispatch.send(Event::Home(Box::new(WeatherEvent::Show))));
 
     rsx! {
         Router::<Route> {}
