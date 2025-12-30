@@ -48,9 +48,9 @@ enum Route {
 #[component]
 fn Layout() -> Element {
     rsx! {
-         document::Link { rel: "stylesheet", href: asset!("../public/css/bulma.min.css") }
-        Nav{}
-         Outlet::<Route> {}
+        document::Link { rel: "stylesheet", href: asset!("../public/css/bulma.min.css") }
+        Nav {}
+        Outlet::<Route> {}
     }
 }
 #[component]
@@ -58,61 +58,65 @@ fn Nav() -> Element {
     let core = use_context::<Coroutine<Event>>();
 
     rsx! {
-               nav {
-                    ul {
-                        li {
-                            a { onclick: move |_| core.send(Event::Navigate(Box::new(Workflow::Home))),
-                                "Home"
-                            }
-                        }
-                        li {
-                            a {
-                                onclick: move |_| {
-                                    core.send(Event::Navigate(Box::new(Workflow::Favorites(FavoritesState::Idle))))
-                                },
-                                "Favorites"
-                            }
-                        }
+        nav {
+            ul {
+                li {
+                    a { onclick: move |_| core.send(Event::Navigate(Box::new(Workflow::Home))),
+                        "Home"
                     }
                 }
+                li {
+                    a {
+                        onclick: move |_| {
+                            core.send(Event::Navigate(Box::new(Workflow::Favorites(FavoritesState::Idle))))
+                        },
+                        "Favorites"
+                    }
+                }
+            }
+        }
     }
 }
+
 #[component]
 fn App() -> Element {
-    let view = use_signal(|| ViewModel {
+    let view_model = use_signal(|| ViewModel {
         workflow: WorkflowViewModel::Home {
             weather_data: Box::new(CurrentResponse::default()),
             favorites: Vec::new(),
         },
     });
+    use_context_provider(|| view_model.clone());
 
     let geo = init_geolocator(PowerMode::High);
 
-    let core = use_coroutine(move |mut rx| {
-        let svc = CoreService::new(view.clone(), geo);
+    let crux = use_coroutine(move |mut rx| {
+        let svc = CoreService::new(view_model.clone(), geo);
         async move { svc.run(&mut rx).await }
     });
-    use_context_provider(|| core);
+    use_context_provider(|| crux);
 
     // send initial event
-    use_resource(move || async move { core.send(Event::Home(Box::new(WeatherEvent::Show))) });
+    use_resource(move || async move { crux.send(Event::Home(Box::new(WeatherEvent::Show))) });
 
     rsx! {
-                        Router::<Route> {}
+        Router::<Route> {}
 
-
-                {
-                    match view().workflow {
-                        WorkflowViewModel::Home { weather_data, favorites } => rsx! {
-                            Home { weather_data, favorites }
-                        },
-                        WorkflowViewModel::Favorites { favorites, delete_confirmation } => {
-                            rsx! {
-                                Favorites { favorites, delete_confirmation }
-                            }
-                        }
-                        WorkflowViewModel::AddFavorite { search_results } => rsx! {
-                            AddFavorite { search_results }
-                        },
-    }}}
+        //
+        // {
+        //     match view().workflow {
+        //         WorkflowViewModel::Home { weather_data, favorites } => rsx! {
+        //             Home { weather_data, favorites }
+        //         },
+        //         WorkflowViewModel::Favorites { favorites, delete_confirmation } => {
+        //             rsx! {
+        //                 Favorites { favorites, delete_confirmation }
+        //             }
+        //         }
+        //         WorkflowViewModel::AddFavorite { search_results } => rsx! {
+        //             AddFavorite { search_results }
+        //         },
+        //     }
+        // }
+    }
 }

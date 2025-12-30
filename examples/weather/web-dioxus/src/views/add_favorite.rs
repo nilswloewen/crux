@@ -65,7 +65,9 @@ pub fn SearchResults(results: Vec<GeocodingResponse>) -> Element {
                             td { "{result.name}" }
                             td { "{result.country}" }
                             td { "{state}" }
-                            td { button { onclick, "+" } }
+                            td {
+                                button { onclick, "+" }
+                            }
                         }
                     }
                 }

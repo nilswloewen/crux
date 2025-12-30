@@ -7,6 +7,7 @@ use shared::{
 #[component]
 pub fn Favorites(favorites: Vec<FavoriteView>, delete_confirmation: Option<Location>) -> Element {
     let core = use_context::<Coroutine<Event>>();
+    let view_model = use_context::<Signal<ViewModel>>();
 
     rsx! {
         h1 { class: "title", "Favorites" }
