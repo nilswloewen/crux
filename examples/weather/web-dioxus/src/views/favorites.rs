@@ -11,10 +11,7 @@ pub fn Favorites(favorites: Vec<FavoriteView>, delete_confirmation: Option<Locat
     rsx! {
         h1 { class: "title", "Favorites" }
         h2 { class: "subtitle", "Favourites" }
-        a {
-            onclick: move |_| {
-                core.send(Event::Navigate(Box::new(Workflow::AddFavorite)))
-            },
+        a { onclick: move |_| { core.send(Event::Navigate(Box::new(Workflow::AddFavorite))) },
             "Add Favorite"
         }
         for favorite in favorites.iter() {

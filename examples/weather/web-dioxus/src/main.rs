@@ -78,14 +78,20 @@ fn App() -> Element {
             }
             section { class: "section has-text-left",
                 nav {
-                    a { onclick: move |_| core.send(Event::Navigate(Box::new(Workflow::Home))),
-                        "Home"
-                    }
-                    a {
-                        onclick: move |_| {
-                            core.send(Event::Navigate(Box::new(Workflow::Favorites(FavoritesState::Idle))))
-                        },
-                        "Favorites"
+                    ul {
+                        li {
+                            a { onclick: move |_| core.send(Event::Navigate(Box::new(Workflow::Home))),
+                                "Home"
+                            }
+                        }
+                        li {
+                            a {
+                                onclick: move |_| {
+                                    core.send(Event::Navigate(Box::new(Workflow::Favorites(FavoritesState::Idle))))
+                                },
+                                "Favorites"
+                            }
+                        }
                     }
                 }
                 {
