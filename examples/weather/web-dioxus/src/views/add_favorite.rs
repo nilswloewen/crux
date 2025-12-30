@@ -33,7 +33,9 @@ pub fn AddFavorite(search_results: Option<Vec<GeocodingResponse>>) -> Element {
 
 #[component]
 pub fn SearchResults(results: Vec<GeocodingResponse>) -> Element {
-   rsx!{
+    let core = use_context::<Coroutine<Event>>();
+
+    rsx!{
            ul {
                 for result in results.iter() {
                     {
