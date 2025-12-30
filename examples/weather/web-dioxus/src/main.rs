@@ -2,10 +2,18 @@ mod core;
 mod http;
 
 use core::CoreService;
+use crux_kv::{value, KeyValueOperation, KeyValueResponse, KeyValueResult, Value};
 use dioxus::prelude::*;
+use dioxus_sdk_geolocation::{init_geolocator, use_geolocation, PowerMode};
+use dioxus_sdk_storage::{use_synced_storage, LocalStorage};
+use js_sys::Reflect::get_own_property_descriptor;
 use serde_json;
-use shared::{CurrentResponse, Event, Location, ViewModel, WeatherEvent, WorkflowViewModel};
+use shared::{
+    Core, CurrentResponse, Event, Location, LocationOperation, LocationResult, ViewModel,
+    WeatherEvent, WorkflowViewModel,
+};
 use tracing::Level;
+use wasm_bindgen_futures::spawn_local;
 
 fn main() {
     dioxus_logger::init(Level::DEBUG).expect("failed to init logger");
@@ -23,8 +31,10 @@ fn App() -> Element {
         },
     });
 
+    let geo = init_geolocator(PowerMode::High);
+
     let core = use_coroutine(move |mut rx| {
-        let svc = CoreService::new(view);
+        let svc = CoreService::new(view, geo);
         async move { svc.run(&mut rx).await }
     });
 
@@ -75,7 +85,7 @@ fn App() -> Element {
                                         }
                                     }
                                 }
-                
+
                                 h2 { class: "subtitle", "Delete Confirmation" }
                                 if let Some(Location { lat, lon }) = delete_confirmation {
                                     "Lat: {lat}, Long: {lon}"

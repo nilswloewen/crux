@@ -1,11 +1,13 @@
 use crate::http;
 use crux_kv::{KeyValueOperation, KeyValueResponse, KeyValueResult, Value};
-use dioxus::prelude::{use_resource, ReadableExt};
+use dioxus::prelude::{use_resource, ReadSignal, ReadableExt};
 use dioxus::{
     prelude::{Signal, UnboundedReceiver},
     signals::WritableExt as _,
 };
-use dioxus_sdk_geolocation::{init_geolocator, use_geolocation, PowerMode};
+use dioxus_sdk_geolocation::{
+    init_geolocator, use_geolocation, Error, Geocoordinates, Geolocator, PowerMode,
+};
 use dioxus_sdk_storage::{use_synced_storage, LocalStorage};
 use futures_util::{StreamExt, TryStreamExt};
 use shared::{
@@ -21,13 +23,15 @@ type Core = Rc<shared::Core<App>>;
 pub struct CoreService {
     core: Core,
     view: Signal<ViewModel>,
+    geo: Signal<Result<Geolocator, Error>>,
 }
 
 impl CoreService {
-    pub fn new(view: Signal<ViewModel>) -> Self {
+    pub fn new(view: Signal<ViewModel>, geo: Signal<Result<Geolocator, Error>>) -> Self {
         Self {
             core: Rc::new(shared::Core::new()),
             view,
+            geo,
         }
     }
 
@@ -43,12 +47,17 @@ impl CoreService {
         debug!("event: {event:?}");
 
         for effect in self.core.process_event(event) {
-            process_effect(&self.core, effect, view);
+            process_effect(&self.core, effect, view, &self.geo);
         }
     }
 }
 
-fn process_effect(core: &Core, effect: Effect, view: &mut Signal<ViewModel>) {
+fn process_effect(
+    core: &Core,
+    effect: Effect,
+    view: &mut Signal<ViewModel>,
+    geo: &Signal<Result<Geolocator, Error>>,
+) {
     debug!("process_effect: {:?}", effect);
 
     match effect {
@@ -58,6 +67,7 @@ fn process_effect(core: &Core, effect: Effect, view: &mut Signal<ViewModel>) {
 
         Effect::Http(mut request) => {
             spawn_local({
+                let geo_clone = geo.clone();
                 let mut view = view.to_owned();
                 let core = core.clone();
 
@@ -68,7 +78,7 @@ fn process_effect(core: &Core, effect: Effect, view: &mut Signal<ViewModel>) {
                         .resolve(&mut request, response.into())
                         .expect("should resolve")
                     {
-                        process_effect(&core, effect, &mut view);
+                        process_effect(&core, effect, &mut view, &geo_clone);
                     }
                 }
             });
@@ -86,7 +96,7 @@ fn process_effect(core: &Core, effect: Effect, view: &mut Signal<ViewModel>) {
                 };
 
                 for effect in core.resolve(&mut request, res).unwrap() {
-                    process_effect(&core, effect, view);
+                    process_effect(&core, effect, view, &geo);
                 }
             }
 
@@ -101,12 +111,12 @@ fn process_effect(core: &Core, effect: Effect, view: &mut Signal<ViewModel>) {
                     },
                 };
                 for effect in core.resolve(&mut request, res).unwrap() {
-                    process_effect(&core, effect, view);
+                    process_effect(&core, effect, view, &geo);
                 }
             }
-            KeyValueOperation::Delete { ref key } =>{
+            KeyValueOperation::Delete { ref key } => {
                 unimplemented!("delete")
-            },
+            }
             KeyValueOperation::Exists { key: _ } => unimplemented!("exists"),
             KeyValueOperation::ListKeys {
                 prefix: _,
@@ -119,23 +129,46 @@ fn process_effect(core: &Core, effect: Effect, view: &mut Signal<ViewModel>) {
                 let res = LocationResult::Enabled(true);
 
                 for effect in core.resolve(&mut request, res).unwrap() {
-                    process_effect(&core, effect, view);
+                    process_effect(&core, effect, view, &geo);
                 }
             }
 
             LocationOperation::GetLocation => {
-                let _geolocator = init_geolocator(PowerMode::High);
-                let latest_coords = use_geolocation();
-                let res = match latest_coords() {
-                    Ok(coords) => LocationResult::Location(Some(Location {
-                        lat: coords.latitude,
-                        lon: coords.longitude,
-                    })),
-                    Err(e) => LocationResult::Location(None),
-                };
-                for effect in core.resolve(&mut request, res).unwrap() {
-                    process_effect(&core, effect, view);
-                }
+                let geo_clone = geo.clone();
+                let mut view = view.to_owned();
+                let core = core.clone();
+
+                spawn_local({
+                    async move {
+                        let binding = geo_clone.read();
+                        let geolocator = match binding.as_ref() {
+                            Ok(geo) => geo.clone(),
+                            Err(e) => {
+                                debug!("{e}");
+                                for effect in core
+                                    .resolve(&mut request, LocationResult::Location(None))
+                                    .unwrap()
+                                {
+                                    process_effect(&core, effect, &mut view, &geo_clone);
+                                }
+                                return ();
+                            }
+                        };
+
+                        let res = match geolocator.get_coordinates().await {
+                            Ok(coords) => LocationResult::Location(Some(Location {
+                                lat: coords.latitude,
+                                lon: coords.longitude,
+                            })),
+                            Err(_) => LocationResult::Location(None),
+                        };
+                        debug!("{res:?}");
+
+                        for effect in core.resolve(&mut request, res).unwrap() {
+                            process_effect(&core, effect, &mut view, &geo_clone);
+                        }
+                    }
+                });
             }
         },
     }
