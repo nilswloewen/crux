@@ -1,8 +1,8 @@
 use dioxus::core::Element;
 use dioxus::core_macro::{component, rsx};
-use dioxus::hooks::{use_context, Coroutine};
+use dioxus::hooks::use_context;
 use dioxus::prelude::*;
-use shared::Event;
+use crate::Dispatch;
 use crate::routes::Route;
 
 #[component]
@@ -16,16 +16,16 @@ pub fn Layout() -> Element {
 
 #[component]
 pub fn Nav() -> Element {
-    let core = use_context::<Coroutine<Event>>();
+    let _dispatch = use_context::<Dispatch>();
 
     rsx! {
         nav {
             ul {
                 li {
-                    Link { to: Route::HomeRoute, "Home" }
+                    Link { to: Route::Home, "Home" }
                 }
                 li {
-                    Link { to: Route::FavoritesRoute, "Favorites" }
+                    Link { to: Route::Favorites, "Favorites" }
                 }
             }
         }

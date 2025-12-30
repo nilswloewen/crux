@@ -1,9 +1,26 @@
 use dioxus::prelude::*;
-use shared::{CurrentResponse, Event, FavoriteView, Favorites, ViewModel, WorkflowViewModel};
+use shared::{
+    CurrentResponse, Event, FavoriteView, Favorites, ViewModel, Workflow, WorkflowViewModel,
+};
+use crate::Dispatch;
 
 #[component]
-pub fn Home(weather_data: Box<CurrentResponse>, favorites: Vec<FavoriteView>) -> Element {    let dispatch = use_context::<Coroutine<Event>>();
+pub fn Home() -> Element {
+    let dispatch = use_context::<Dispatch>();
+    let view_model = use_context::<Signal<ViewModel>>();
+
+    let WorkflowViewModel::Home {
+        weather_data,
+        favorites,
+    } = view_model().workflow
+    else {
+        dispatch.send(Event::Navigate(Box::new(Workflow::Home)));
+        return rsx! { "Loading..." };
+    };
+
     rsx! {
+        Title { "Home | Crux Weather Example" }
+
         h1 { class: "title", "Home" }
         h2 { class: "subtitle", "Current Location" }
         table { class: "table",
