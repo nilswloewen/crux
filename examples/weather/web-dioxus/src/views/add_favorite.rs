@@ -15,7 +15,7 @@ pub fn AddFavorite(search_results: Option<Vec<GeocodingResponse>>) -> Element {
     let oninput = move |e: dioxus_core::Event<FormData>| {
         dispatch.send(Event::Favorites(Box::new(FavoritesEvent::Search(
             e.value(),
-        ))))
+        ))));
     };
 
     rsx! {
@@ -59,7 +59,6 @@ pub fn SearchResults(results: Vec<GeocodingResponse>) -> Element {
                         let res_clone = result.clone();
                         let onclick = move |_| {
                             dispatch
-
                                 .send(
                                     Event::Favorites(
                                         Box::new(FavoritesEvent::Submit(Box::new(res_clone.clone()))),
