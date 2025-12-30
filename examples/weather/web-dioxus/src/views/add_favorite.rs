@@ -24,7 +24,17 @@ pub fn AddFavorite(search_results: Option<Vec<GeocodingResponse>>) -> Element {
 
         h2 { class: "subtitle", "Search Results" }
         if let Some(results) = search_results {
-            ul {
+      SearchResults {results}
+        }else {
+            "No results"
+        }
+    }
+}
+
+#[component]
+pub fn SearchResults(results: Vec<GeocodingResponse>) -> Element {
+   rsx!{
+           ul {
                 for result in results.iter() {
                     {
                         let res_clone = result.clone();
@@ -44,6 +54,5 @@ pub fn AddFavorite(search_results: Option<Vec<GeocodingResponse>>) -> Element {
                     }
                 }
             }
-        }
-    }
+   }
 }
