@@ -18,4 +18,13 @@ pub enum Route {
 
     #[route("/favorites/add")]
     AddFavorite,
+
+    #[route("/:..route")]
+    NotFound { route: Vec<String> },
+}
+
+#[component]
+fn NotFound(route: Vec<String>) -> Element {
+    let path = format!("/{}", route.join("/"));
+    rsx! { "404 Page not found: {path}" }
 }
