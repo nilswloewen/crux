@@ -3,7 +3,7 @@ use dioxus::prelude::*;
 use shared::{Event, FavoritesEvent, GeocodingResponse, ViewModel, Workflow, WorkflowViewModel};
 
 #[component]
-pub fn AddFavorite(search_results: Option<Vec<GeocodingResponse>>) -> Element {
+pub fn AddFavorite() -> Element {
     let dispatch = use_context::<Dispatch>();
     let view_model = use_context::<Signal<ViewModel>>();
 
@@ -12,7 +12,27 @@ pub fn AddFavorite(search_results: Option<Vec<GeocodingResponse>>) -> Element {
         return rsx! { "Loading..." };
     };
 
+    let mut is_searching = use_signal(|| false);
+    let mut results_at_search_start = use_signal(|| None::<Vec<GeocodingResponse>>);
+
+    use_effect(move || {
+        // Read view_model inside effect to track it as a reactive dependency
+        let WorkflowViewModel::AddFavorite { search_results } = view_model().workflow else {
+            return;
+        };
+        // Only turn off is_searching when results differ from when search started
+        if is_searching() && search_results != results_at_search_start() {
+            is_searching.set(false);
+        }
+    });
+
     let oninput = move |e: dioxus_core::Event<FormData>| {
+        // Capture current results before starting new search
+        let WorkflowViewModel::AddFavorite { search_results } = view_model().workflow else {
+            return;
+        };
+        results_at_search_start.set(search_results);
+        is_searching.set(true);
         dispatch.send(Event::Favorites(Box::new(FavoritesEvent::Search(
             e.value(),
         ))));
@@ -28,6 +48,9 @@ pub fn AddFavorite(search_results: Option<Vec<GeocodingResponse>>) -> Element {
             div { class: "control",
                 input { class: "input", oninput }
             }
+        }
+        if is_searching() {
+            "Searching..."
         }
 
         h2 { class: "subtitle", "Search Results" }

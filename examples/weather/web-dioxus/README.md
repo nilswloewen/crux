@@ -1,4 +1,11 @@
-# Development
+# Dioxus implementation of Crux Weather Example
+
+## Web (dx serve --web)
+
+Strictly speaking, the Dioxus Router is not necessary as this could be a Single Page Application (SPA) with no browser history. 
+The Router allows for updating the browser page title, URL, history, and the use of forward/back buttons.
+
+## Development
 
 Install the Dioxus CLI globally:
 

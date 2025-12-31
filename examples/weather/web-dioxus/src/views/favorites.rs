@@ -21,6 +21,21 @@ pub fn Favorites() -> Element {
         return rsx! { "Loading..." };
     };
 
+    if let Some(Location { lat, lon }) = delete_confirmation {
+        let on_confirm =
+            move |_| dispatch.send(Event::Favorites(Box::new(FavoritesEvent::DeleteConfirmed)));
+        let on_cancel =
+            move |_| dispatch.send(Event::Favorites(Box::new(FavoritesEvent::DeleteCancelled)));
+        return rsx! {
+            h2 { class: "subtitle", "Delete Confirmation" }
+
+            "Are you sure you want to delete:"
+            "Lat: {lat}, Long: {lon}"
+
+            button { onclick: on_cancel, "cancel" }
+            button { onclick: on_confirm, "Delete" }
+        };
+    }
     rsx! {
         Title { "Favorites | Crux Weather Example" }
 
@@ -29,24 +44,32 @@ pub fn Favorites() -> Element {
         Link { to: Route::AddFavorite, "Add Favorite" }
         table { class: "table",
             for favorite in favorites.iter() {
-                tr {
-                    th { "{favorite.name}" }
-                    td { class: "has-text-right",
-                        if let Some(ref current) = *favorite.current {
-                            "{current.main.temp} °C"
-                        } else {
-                            "Loading..."
+                {
+                    let location = favorite.location.clone();
+
+                    let onclick = move |_| {
+                        dispatch
+                            .send(
+                                Event::Favorites(Box::new(FavoritesEvent::DeletePressed(location))),
+                            )
+                    };
+                    rsx! {
+                        tr {
+                            th { "{favorite.name}" }
+                            td { class: "has-text-right",
+                                if let Some(ref current) = *favorite.current {
+                                    "{current.main.temp} °C"
+                                } else {
+                                    "Loading..."
+                                }
+                            }
+                            td {
+                                button { onclick, "Delete" }
+                            }
                         }
                     }
                 }
             }
-        }
-
-        h2 { class: "subtitle", "Delete Confirmation" }
-        if let Some(Location { lat, lon }) = delete_confirmation {
-            "Lat: {lat}, Long: {lon}"
-        } else {
-            "None"
         }
     }
 }

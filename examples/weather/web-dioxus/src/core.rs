@@ -15,6 +15,7 @@ use shared::{
     FAVORITES_KEY,
 };
 use std::collections::HashMap;
+use std::ops::Deref;
 use std::rc::Rc;
 use tracing::debug;
 use wasm_bindgen_futures::spawn_local;
@@ -158,7 +159,7 @@ fn process_effect(
                 spawn_local({
                     async move {
                         let binding = geo_clone.read();
-                        let geolocator = match binding.as_ref() {
+                        let geolocator = match binding.deref() {
                             Ok(geo) => geo.clone(),
                             Err(e) => {
                                 debug!("{e}");
