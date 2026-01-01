@@ -1,8 +1,7 @@
 use crate::{Dispatch, Route};
 use dioxus::prelude::*;
 use shared::{
-    App, Core, CurrentResponse, Event, FavoriteView, FavoritesEvent, FavoritesState, Location,
-    LocationOperation, LocationResult, ViewModel, WeatherEvent, Workflow, WorkflowViewModel,
+    Event, FavoritesEvent, FavoritesState, Location, ViewModel, Workflow, WorkflowViewModel,
 };
 
 #[component]
@@ -45,7 +44,7 @@ pub fn Favorites() -> Element {
         table { class: "table",
             for favorite in favorites.iter() {
                 {
-                    let location = favorite.location.clone();
+                    let location = favorite.location;
 
                     let onclick = move |_| {
                         dispatch

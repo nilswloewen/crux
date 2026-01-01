@@ -1,5 +1,3 @@
-use gloo_net::http;
-
 use shared::http::{
     protocol::{HttpRequest, HttpResponse},
     HttpError, Result,
@@ -13,9 +11,11 @@ pub async fn request(
         ..
     }: &HttpRequest,
 ) -> Result<HttpResponse> {
+    let client = reqwest::Client::new();
+
     let mut request = match method.as_str() {
-        "GET" => http::Request::get(url),
-        "POST" => http::Request::post(url),
+        "GET" => client.get(url),
+        "POST" => client.post(url),
         _ => panic!("not yet handling this method"),
     };
 
@@ -27,10 +27,11 @@ pub async fn request(
         .send()
         .await
         .map_err(|error| HttpError::Io(error.to_string()))?;
+    let status = response.status().as_u16();
     let body = response
-        .binary()
+        .bytes()
         .await
         .map_err(|error| HttpError::Io(error.to_string()))?;
 
-    Ok(HttpResponse::status(response.status()).body(body).build())
+    Ok(HttpResponse::status(status).body(body.to_vec()).build())
 }

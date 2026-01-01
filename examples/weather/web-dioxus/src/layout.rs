@@ -1,8 +1,6 @@
 use crate::routes::Route;
-use crate::Dispatch;
 use dioxus::core::Element;
 use dioxus::core_macro::{component, rsx};
-use dioxus::hooks::use_context;
 use dioxus::prelude::*;
 
 #[component]

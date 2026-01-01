@@ -1,8 +1,6 @@
 use crate::Dispatch;
 use dioxus::prelude::*;
-use shared::{
-    CurrentResponse, Event, FavoriteView, Favorites, ViewModel, Workflow, WorkflowViewModel,
-};
+use shared::{Event, ViewModel, Workflow, WorkflowViewModel};
 
 #[component]
 pub fn Home() -> Element {

@@ -1,24 +1,15 @@
 use crate::http;
 use crux_kv::{KeyValueError, KeyValueOperation, KeyValueResponse, KeyValueResult, Value};
-use dioxus::prelude::{use_resource, ReadSignal, ReadableExt, ReadableOptionExt};
-use dioxus::{
-    prelude::{Signal, UnboundedReceiver},
-    signals::WritableExt as _,
-};
-use dioxus_sdk_geolocation::{
-    init_geolocator, use_geolocation, Error, Geocoordinates, Geolocator, PowerMode,
-};
-use dioxus_sdk_storage::{use_synced_storage, LocalStorage};
-use futures_util::{StreamExt, TryStreamExt};
-use shared::{
-    App, Effect, Event, Favorites, Location, LocationOperation, LocationResult, ViewModel,
-    FAVORITES_KEY,
-};
+use dioxus::prelude::{ReadableExt, Signal, UnboundedReceiver};
+use dioxus::signals::WritableExt as _;
+use dioxus_sdk_geolocation::{Error, Geolocator};
+use futures_util::StreamExt;
+use shared::{App, Effect, Event, Location, LocationOperation, LocationResult, ViewModel};
 use std::collections::HashMap;
 use std::ops::Deref;
 use std::rc::Rc;
 use tracing::debug;
-use wasm_bindgen_futures::spawn_local;
+use dioxus::prelude::spawn;
 
 /// This simple example only needs one key "favorites", however, the crux KV API supports multiple keys, so we should too by using a HashMap.
 pub type LocalStorageKV = HashMap<String, Vec<u8>>;
@@ -78,11 +69,11 @@ fn process_effect(
         }
 
         Effect::Http(mut request) => {
-            spawn_local({
-                let geo_clone = geo.clone();
+            spawn({
+                let geo_clone = *geo;
                 let mut view = view.to_owned();
                 let core = core.clone();
-                let mut storage_clone = storage.clone();
+                let mut storage_clone = *storage;
 
                 async move {
                     let response = http::request(&request.operation).await;
@@ -131,7 +122,7 @@ fn process_effect(
                     process_effect(core, effect, view, geo, storage);
                 }
             }
-            KeyValueOperation::Delete { ref key } => {
+            KeyValueOperation::Delete { key: _ } => {
                 unimplemented!("delete")
             }
             KeyValueOperation::Exists { key: _ } => unimplemented!("exists"),
@@ -146,21 +137,21 @@ fn process_effect(
                 let res = LocationResult::Enabled(true);
 
                 for effect in core.resolve(&mut request, res).unwrap() {
-                    process_effect(&core, effect, view, geo, storage);
+                    process_effect(core, effect, view, geo, storage);
                 }
             }
 
             LocationOperation::GetLocation => {
-                let geo_clone = geo.clone();
+                let geo_clone = *geo;
                 let mut view = view.to_owned();
                 let core = core.clone();
-                let mut storage_clone = storage.clone();
+                let mut storage_clone = *storage;
 
-                spawn_local({
+                spawn({
                     async move {
                         let binding = geo_clone.read();
                         let geolocator = match binding.deref() {
-                            Ok(geo) => geo.clone(),
+                            Ok(geo) => geo,
                             Err(e) => {
                                 debug!("{e}");
                                 for effect in core
@@ -175,7 +166,7 @@ fn process_effect(
                                         &mut storage_clone,
                                     );
                                 }
-                                return ();
+                                return;
                             }
                         };
 
