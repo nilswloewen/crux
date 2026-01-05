@@ -4,8 +4,9 @@ use facet::Facet;
 use serde::{Deserialize, Serialize};
 use serde_json;
 
-use crate::app::{Effect, Model, Workflow};
+use crate::app::{Effect, Model};
 use crate::favorites::model::{FAVORITES_KEY, Favorite, Favorites, FavoritesState};
+use crate::navigation::CurrentPage;
 use crate::location::client::{LocationApi, LocationError};
 use crate::location::model::geocoding_response::GeocodingResponse;
 
@@ -47,13 +48,13 @@ pub enum FavoritesEvent {
 pub fn update(event: FavoritesEvent, model: &mut Model) -> Command<Effect, FavoritesEvent> {
     match event {
         FavoritesEvent::DeletePressed(location) => {
-            model.workflow = Workflow::Favorites(FavoritesState::ConfirmDelete(location));
+            model.page.update_favorites_state(FavoritesState::ConfirmDelete(location));
             render()
         }
 
         FavoritesEvent::DeleteConfirmed => {
-            if let Workflow::Favorites(FavoritesState::ConfirmDelete(location)) = model.workflow {
-                model.workflow = Workflow::Favorites(FavoritesState::Idle);
+            if let CurrentPage::Favorites(_, FavoritesState::ConfirmDelete(location)) = model.page {
+                model.page.update_favorites_state(FavoritesState::Idle);
 
                 if model.favorites.remove(&location).is_some() {
                     return update(FavoritesEvent::Set, model).and(render());
@@ -64,7 +65,7 @@ pub fn update(event: FavoritesEvent, model: &mut Model) -> Command<Effect, Favor
         }
 
         FavoritesEvent::DeleteCancelled => {
-            model.workflow = Workflow::Favorites(FavoritesState::Idle);
+            model.page.update_favorites_state(FavoritesState::Idle);
             render()
         }
 
@@ -87,7 +88,7 @@ pub fn update(event: FavoritesEvent, model: &mut Model) -> Command<Effect, Favor
             render()
         }
         FavoritesEvent::Submit(geo) => {
-            model.workflow = Workflow::Favorites(FavoritesState::Idle);
+            model.page.update_favorites_state(FavoritesState::Idle);
             model.search_results = None;
 
             let favorite = Favorite::from(*geo);
@@ -104,7 +105,7 @@ pub fn update(event: FavoritesEvent, model: &mut Model) -> Command<Effect, Favor
         }
         FavoritesEvent::Cancel => {
             model.search_results = None;
-            model.workflow = Workflow::Favorites(FavoritesState::Idle);
+            model.page.update_favorites_state(FavoritesState::Idle);
             render()
         }
         // ======================
@@ -227,16 +228,21 @@ mod tests {
 
     #[test]
     fn test_delete_with_persistence() {
+        use crate::navigation::{NavigationTarget, Page};
+
         let mut model = Model::default();
         let favorite = test_favorite();
         let favorite = favorite.clone(); // Clone once at the start
         model.favorites.insert(favorite.clone());
 
-        // Set the state to ConfirmDelete with the favorite's coordinates
-        model.workflow = Workflow::Favorites(FavoritesState::ConfirmDelete(Location {
-            lat: favorite.geo.lat,
-            lon: favorite.geo.lon,
-        }));
+        // Navigate to Favorites page first, then set ConfirmDelete state
+        model.page = CurrentPage::Favorites(
+            Page::default(),
+            FavoritesState::ConfirmDelete(Location {
+                lat: favorite.geo.lat,
+                lon: favorite.geo.lon,
+            }),
+        );
 
         // Delete and verify KV is updated
         let mut cmd = update(FavoritesEvent::DeleteConfirmed, &mut model);
@@ -257,7 +263,12 @@ mod tests {
 
     #[test]
     fn test_delete_pressed() {
+        use crate::navigation::Page;
+
         let mut model = Model::default();
+        // Start on Favorites page
+        model.page = CurrentPage::Favorites(Page::default(), FavoritesState::Idle);
+
         let favorite = Favorite {
             geo: GeocodingResponse {
                 name: "Phoenix".to_string(),
@@ -280,8 +291,8 @@ mod tests {
 
         // Verify the state was updated correctly
         assert!(matches!(
-            model.workflow,
-            Workflow::Favorites(FavoritesState::ConfirmDelete(Location {
+            model.page,
+            CurrentPage::Favorites(_, FavoritesState::ConfirmDelete(Location {
                 lat: 33.456_789,
                 lon: -112.037_222,
             }))
@@ -290,6 +301,8 @@ mod tests {
 
     #[test]
     fn test_delete_confirmed() {
+        use crate::navigation::Page;
+
         let app = App;
         let mut model = Model::default();
         let favorite = Favorite {
@@ -349,7 +362,7 @@ mod tests {
         };
 
         model.favorites.insert(favorite.clone());
-        model.workflow = Workflow::Favorites(FavoritesState::ConfirmDelete(latlon));
+        model.page = CurrentPage::Favorites(Page::default(), FavoritesState::ConfirmDelete(latlon));
 
         // First command from DeleteConfirmed
         let mut cmd = app.update(
@@ -363,27 +376,30 @@ mod tests {
         // Verify the favorite was removed and state was reset
         assert!(model.favorites.is_empty());
         assert!(matches!(
-            model.workflow,
-            Workflow::Favorites(FavoritesState::Idle)
+            model.page,
+            CurrentPage::Favorites(_, FavoritesState::Idle)
         ));
     }
 
     #[test]
     fn test_delete_cancelled() {
-        let mut model = Model {
-            workflow: Workflow::Favorites(FavoritesState::ConfirmDelete(Location {
+        use crate::navigation::Page;
+
+        let mut model = Model::default();
+        model.page = CurrentPage::Favorites(
+            Page::default(),
+            FavoritesState::ConfirmDelete(Location {
                 lat: 33.456_789,
                 lon: 112.037_222,
-            })),
-            ..Default::default()
-        };
+            }),
+        );
 
         let _ = update(FavoritesEvent::DeleteCancelled, &mut model);
 
         // Verify the state was reset
         assert!(matches!(
-            model.workflow,
-            Workflow::Favorites(FavoritesState::Idle)
+            model.page,
+            CurrentPage::Favorites(_, FavoritesState::Idle)
         ));
     }
 

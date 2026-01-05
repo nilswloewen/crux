@@ -17,14 +17,14 @@ use crate::{
     location::{
         Location, capability::LocationOperation, model::geocoding_response::GeocodingResponse,
     },
-    navigation::{CurrentPage, navigate},
+    navigation::{CurrentPage, NavigationTarget},
     weather::{self, events::WeatherEvent, model::current_response::CurrentResponse},
 };
 
 #[derive(Facet, Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[repr(C)]
 pub enum Event {
-    Navigate(Box<Workflow>),
+    Navigate(Box<NavigationTarget>),
     Home(Box<WeatherEvent>),
     Favorites(Box<FavoritesEvent>),
 }
@@ -38,20 +38,10 @@ pub enum Effect {
     Location(LocationOperation),
 }
 
-#[derive(Facet, Default, Serialize, Deserialize, Clone, Debug, PartialEq)]
-#[repr(C)]
-pub enum Workflow {
-    #[default]
-    Home,
-    Favorites(FavoritesState),
-    AddFavorite,
-}
-
 #[derive(Default, Debug)]
 pub struct Model {
     pub weather_data: CurrentResponse,
     pub page: CurrentPage,
-    pub workflow: Workflow,
     pub favorites: Favorites,
     pub search_results: Option<Vec<GeocodingResponse>>,
     pub location_enabled: bool,
@@ -115,10 +105,21 @@ impl crux_core::App for App {
 
     fn update(&self, event: Self::Event, model: &mut Self::Model) -> Command<Effect, Event> {
         match event {
-            Event::Navigate(next) => {
-                navigate(&mut model.page, &next);
-                model.workflow = *next;
-                render()
+            Event::Navigate(target) => {
+                // Use the type-safe navigation system
+                let current = std::mem::take(&mut model.page);
+                match current.try_navigate(*target) {
+                    Ok(next_page) => {
+                        model.page = next_page;
+                        render()
+                    }
+                    Err(err) => {
+                        // Invalid navigation - restore current page and log
+                        model.page = current;
+                        tracing::warn!("Invalid navigation from {} to {}", err.from, err.to);
+                        Command::none()
+                    }
+                }
             }
             Event::Home(home_event) => {
                 let mut commands = Vec::new();
@@ -145,12 +146,12 @@ impl crux_core::App for App {
     fn view(&self, model: &Model) -> ViewModel {
         let favorites = model.favorites.iter().map(From::from).collect();
 
-        let workflow = match &model.workflow {
-            Workflow::Home => WorkflowViewModel::Home {
+        let workflow = match &model.page {
+            CurrentPage::Home(_) => WorkflowViewModel::Home {
                 weather_data: Box::new(model.weather_data.clone()),
                 favorites,
             },
-            Workflow::Favorites(favorites_state) => match favorites_state {
+            CurrentPage::Favorites(_, favorites_state) => match favorites_state {
                 FavoritesState::Idle => WorkflowViewModel::Favorites {
                     favorites,
                     delete_confirmation: None,
@@ -160,7 +161,7 @@ impl crux_core::App for App {
                     delete_confirmation: Some(*location),
                 },
             },
-            Workflow::AddFavorite => WorkflowViewModel::AddFavorite {
+            CurrentPage::AddFavorite(_) => WorkflowViewModel::AddFavorite {
                 search_results: model.search_results.clone(),
             },
         };
@@ -182,28 +183,49 @@ mod tests {
 
         // Navigate to Favorites
         let _ = app.update(
-            Event::Navigate(Box::new(Workflow::Favorites(FavoritesState::Idle))),
+            Event::Navigate(Box::new(NavigationTarget::Favorites(FavoritesState::Idle))),
             &mut model,
         );
 
         assert!(matches!(
-            model.workflow,
-            Workflow::Favorites(FavoritesState::Idle)
+            model.page,
+            CurrentPage::Favorites(_, FavoritesState::Idle)
         ));
 
         // Navigate to Home
-        let _ = app.update(Event::Navigate(Box::new(Workflow::Home)), &mut model);
-        assert!(matches!(model.workflow, Workflow::Home));
+        let _ = app.update(
+            Event::Navigate(Box::new(NavigationTarget::Home)),
+            &mut model,
+        );
+        assert!(matches!(model.page, CurrentPage::Home(_)));
 
         // back to favorites, so we can go to AddFavorite
         let _ = app.update(
-            Event::Navigate(Box::new(Workflow::Favorites(FavoritesState::Idle))),
+            Event::Navigate(Box::new(NavigationTarget::Favorites(FavoritesState::Idle))),
             &mut model,
         );
 
         // Navigate to AddFavorite
-        let _ = app.update(Event::Navigate(Box::new(Workflow::AddFavorite)), &mut model);
+        let _ = app.update(
+            Event::Navigate(Box::new(NavigationTarget::AddFavorite)),
+            &mut model,
+        );
 
-        assert!(matches!(model.workflow, Workflow::AddFavorite));
+        assert!(matches!(model.page, CurrentPage::AddFavorite(_)));
+    }
+
+    #[test]
+    fn test_invalid_navigation_rejected() {
+        let app = App;
+        let mut model = Model::default();
+
+        // Try to navigate directly from Home to AddFavorite (invalid)
+        let _ = app.update(
+            Event::Navigate(Box::new(NavigationTarget::AddFavorite)),
+            &mut model,
+        );
+
+        // Should still be on Home - invalid navigation was rejected
+        assert!(matches!(model.page, CurrentPage::Home(_)));
     }
 }
